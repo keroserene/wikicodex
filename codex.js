@@ -98,27 +98,67 @@ function parseAPIdata(id, data) {
       extract +
     '</div>' +
     '</div>';
-  console.log(htmlGen);
+  // console.log(htmlGen);
   pane = $(htmlGen);
   pane.appendTo(main);
 
-  console.log(data.linkshere.length);
+  arrangeNeighbors(data.linkshere);
+
+}
+
+/* Aesthetics - related nodes shall relate radially from the central node, the
+ * current page. The nodes shall be evenly distributed among the angle of
+ * neighbor, centered south.
+ * As the number of nodes increases, the total angle approaches 2:00 and 10:00, like
+ * BM.
+ */
+function _radialPosition(angle) {
+  let root
+}
+
+// Take N links and arrange them radially around the central node.
+function arrangeNeighbors(links) {
+
+  // console.log('Parsing total neighbors: ', links.length);
+  let total = links.length;
+  // Begins at 180 degrees (0600) but winds back towards 0200 as N -> inf
+  let max_spread = 240;
+  let root = 60 + (1.0 / total) * (max_spread / 2.0);
+  let spread_angle = (180 - root) * 2;
+  let spread_increment = spread_angle / total;
+  let spread_start = root + spread_increment / 2;
+
+  console.log(total, max_spread, root, spread_angle, spread_increment);
+
   // Relationship Objects
-  $.each(data.linkshere, function(id, n) {
+  $.each(links, function(id, n) {
+    let radius = 42;  // in rem units
+
+    // Set position based on angle calculation.
+    let angle = spread_start + (spread_increment * id);
+    let angleR = angle * Math.PI / 180.0;
+    let x = 50 + Math.sin(angleR) * radius;
+    let y = 30 - Math.cos(angleR) * radius;
+    console.log(id, n, angle, angleR, x, y);
+
     let gen = '<div class="pane small">' +
-      n.title + '<br/>' + n.pageid +
+      n.title + '<br/>' + n.pageid + '\n<br/>'  + 
+      angle + '\n' + parseInt(x) + '\n' + parseInt(y) +
       '</div>';
     let $child = $(gen);
     neighbors[id] = $child;
     $child.appendTo(main);
     // Animate movement of neighbor panels to specific spots.
     $(this).delay(100+(id*5)).queue(function() {
-      console.log(id, n);
       $child.addClass('placed');
       neighbors[id].addClass('placed');
-      neighbors[id].css('left', '' + (id * 10) + 'rem');
-      neighbors[id].css('top', '' + (30 + id * 1) + 'rem');
+
+      neighbors[id].css('left', '' + x + 'rem');
+      neighbors[id].css('top', '' + y + 'rem');
+      // neighbors[id].css('left', '' + (id * 10) + 'rem');
+      // neighbors[id].css('top', '' + (30 + id * 1) + 'rem');
     });
+
   });
 }
 

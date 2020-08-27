@@ -71,10 +71,17 @@ a:hover {
   min-width: 5rem;
   margin: 2rem;
   display: inline-block;
+  border-radius: 100%;
   -webkit-transition: all 0.66s;
     transition: all 0.66s;
+  text-align: center;
+  opacity: 0.6;
 }
 /* After the panel has been moved to a reasonable spot. */
 .pane.small.placed {
   // top: 30rem;
+}
+.pane.small:hover {
+  opacity: 1;
+  cursor: pointer;
 }
