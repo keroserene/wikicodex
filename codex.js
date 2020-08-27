@@ -1,19 +1,10 @@
-
-console.log('this is a page.');
 /*
-// var fetch = https://en.wikipedia.org/wiki/Piano
-var url = 'https://en.wikipedia.org/wiki/Piano';
+An experimental knowledge graph visualizer.
+@author: serene
+@genesis date: 2020.08.27
 
-function fetchPage() {
-  let req = new XMLHttpRequest();
-  req.open("GET", url);
-  console.log(req);
-  req.onreadystatechange = function(e) {
-    console.log(req.responseText);
-  };
-  // req.send();
-} */
-// Making use of the API.
+Depends on the MediaWiki API.
+*/
 
 var $main = $('.main');
 var $center = null;
@@ -59,11 +50,14 @@ function fetchPageID(id) {
     // blpageid: pids[0],
     prop: 'info|extracts|pageimages|linkshere',
     // prop: 'info|extracts|linkshere',
+    piprop: 'thumbnail|original|name',
     inprop: 'url',
     // prop: 'info',
     // linkshere: true,
     lhprop: 'pageid|title|redirect',
+    lhnamespace: '0',  // Limit to only normal articles.
     iwurl: true,
+    iwlimit: 50,
     // iwlinks: true,
     pageids: pids,
     indexpageids: true,
@@ -98,6 +92,13 @@ function parseAPIdata(id, data) {
   let extract = data.extract;
   let fullUrl = data.fullurl || 'unknown';
 
+  function _parseMainImage(data) {
+    if (!data.original|| !data.original.source) {
+      return '';
+    }
+    return '<img class="pane-main-image" src="' + data.original.source + '"/>' +
+      '<div class="pane-main-image-buffer"></div>';
+  }
   function _parseThumbnail(data) {
     if (!data.thumbnail || !data.thumbnail.source) {
       return '';
@@ -106,14 +107,19 @@ function parseAPIdata(id, data) {
   }
   // Create or add the center pane to the domtree.
   $center = $('.pane.center');
-  let htmlGen = '<div class="pane-header">' +
-    _parseThumbnail(data) + 
+  let htmlGen = '' +
+    _parseMainImage(data) +
+    '<a class="pane-full-link" href="' + fullUrl + '" target="_blank">' +
+      '&#x02795; view full page' +
+    '</a>' +
+    '<div class="pane-content">' +
+    '<div class="pane-header">' +
+    // _parseThumbnail(data) + 
     title +
-    '<a class="full-link" href="' + fullUrl + '" target="_blank">' + 'View Full Page</a>' +
     '</div>' +
     '<div class="pane-excerpt">' +
       extract +
-    '</div>';
+    '</div></div>';
 
   if ($center.length <= 0) {
     $center = $('<div class="pane"></div>');
@@ -123,6 +129,8 @@ function parseAPIdata(id, data) {
       $center.addClass('center');
     }, 100);
   } else {
+    $center.removeClass('radiation');
+    $center.removeClass('small');
     $center.html(htmlGen);
   }
 
@@ -155,6 +163,7 @@ function createNeighborNode(data, $node) {
     $node = $('<div class="pane small"></div>');
   } else {
     $node.removeClass('center');
+    $node.removeClass('radiation');
     $node.addClass('small');
   }
   // Have the neighbor node begin somewhere reasonable.
@@ -162,7 +171,8 @@ function createNeighborNode(data, $node) {
   // let gen = '<div class="pane small"' +
       // 'style="left:' + origins.x +
             // ';top:'+origins.y+'">' +
-  let gen = '<div class="label">' + data.title + '</div>';
+  let txt = data.title.replace(' ','<br/>');
+  let gen = '<div class="label">' + txt + '</div>';
     // '<br/>' + n.pageid + '\n<br/>'  +
     // angle + '\n' + parseInt(x) + '\n' + parseInt(y) +
     // '</div>';

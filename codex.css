@@ -28,13 +28,27 @@ a:hover {
   border-bottom: 1px solid #888;
   display: block;
   width: 100%;
+  font-family: monospace;
+  text-align: center;
+  padding: 3rem;
 }
+
+/* CSS class chema for this.
+  pane is the base "panel" which is the root of all nodes.
+
+  - when it also contains .center, it means it's the central node.
+  There should only be one center at a time.
+  - small means it's an immediate neighbor of center - which will be arranged
+    radially below.
+  - radiation means it's a node that's known, but not actively related to the
+    current context, and will be in the background.
+*/
 
 .pane {
   position: fixed;
   background-color: rgba(0,0,0,0.8);
   border: 1px solid #888;
-  padding: 3rem;
+  padding: 0;
   // max-width: 60rem;
   // min-width: 40rem;
   // width: 40%;
@@ -44,13 +58,13 @@ a:hover {
   top: 50%;
   left: 50%;
   // max-height: 50%;
-  max-height: 40rem;
+  max-height: 80rem;
   margin: auto;
   -webkit-transition: all 1.2s;
   transition: all 1.2s;
   cursor: default;
   overflow: hidden;
-  text-overflow: ellipsis
+  // text-overflow: ellipsis;
   line-height: 1.6;
   color: #ccc;
   // border-radius: 30%;
@@ -63,45 +77,61 @@ a:hover {
   box-shadow: 0,1,10,rgba(0,0,0,0.5);
   max-width: 80rem;
   opacity: 0.9;
+  z-index: 1000;
 }
 
-/* Class Schema
+.pane-full-link {
+  position: absolute;
+  top:0;right:0;
+  background-color: rgba(0,0,0,0.5);
+  font-size: 80%;
+  font-variant: small-caps;
+  padding: 1rem 1rem;
+  text-decoration: none;
+} .pane-full-link:hover {
+  background-color: rgba(255,255,255,0.5);
+  cursor: pointer;
+}
+.pane-main-image {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%;
+  z-index: -1;
+}
+.pane-main-image-buffer {
+  /* Only necessary when pane-main-image is there. */
+  height: 40rem;
+  display: block;
+}
 
-  pane is the base "panel" which is the root of all nodes.
-
-  - when it also contains .center, it means it's the central node.
-  There should only be one center at a time.
-  - small means it's an immediate neighbor of center - which will be arranged
-    radially below.
-  - radiation means it's a node that's known, but not actively related to the
-    current context, and will be in the background.
-*/
+.pane-content {
+  background-color: rgba(0,0,0,0.77);
+  padding: 3rem 5rem;
+}
 .pane-header {
   font-size: 150%;
   margin-bottom: 1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #888;
   font-variant: small-caps;
 }
 
 .pane-excerpt {
   font-size: 100%;
   line-height: 1.6;
+  overflow: scroll;
+  max-height: 30rem;
 }
 .thumbnail {
   display: inline-block;
-}
-.full-link {
-  display: inline-block;
-  float: right;
 }
 
 .pane.small {
   position: fixed;
   font-size: 100%;
   font-weight: 900;
-  width: 10rem;
-  height: 10rem;
-  min-width: 5rem;
+  min-width: 10rem; min-height: 10rem;
+  width: 10rem; height: 10rem;
+  // max-height: 20rem;
   margin: 2rem;
   display: inline-block;
   border-radius: 100%;
@@ -109,30 +139,60 @@ a:hover {
     transition: all 0.66s;
   text-align: center;
   opacity: 0.7;
-  -webkit-transform: translateX(-50%);
+  border-color: #000;
+  // background-color: rgba(255,255,255,0.8);
 }
 /* After the panel has been moved to a reasonable spot. */
 .pane.small:hover {
   opacity: 1;
   cursor: pointer;
-  padding: 2.5rem;
-  width: 12rem;
-  height: 12rem;
+  overflow: visible;
+  // padding: 2.5rem;
+  box-shadow: 0 0 23px 6px rgba(255,255,255,0.5);
+  // box-shadow: 0 0 23px 23px rgba(0,0,0,0.8);
+  border-color: #111;
 }
 
+.pane .label {
+  width: 200%;
+  height: 100%;
+  padding-top: 20%;
+  text-transform: uppercase;
+  text-align: center;
+  // color: #000;
+  font-size: 1.4rem;
+  -webkit-transform: translateX(-25%);
+}
+.pane.small:hover .label {
+  color: #fff;
+  text-shadow: 1,1,10px, #000;
+}
 /* radiation styles */
 .pane.radiation {
-  z-index: -1;
-  max-width: 2rem;
-  max-height: 2rem;
-  opacity: 0.5;
+  z-index: 0;
+  max-width: 5rem;
+  max-height: 5rem;
+  width: 2.3rem; height: 2.3rem;
+  background-color: #fff;
+  opacity: 0.8;
   border-radius: 100%;
   // -webkit-transition: all 4.66s;
     // transition: all 4.66s;
   font-size: 0.3rem;
   padding: 0;
+  box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
+} .pane.radiation:hover {
+  /* These can still be interacted with. */
+  box-shadow: 0 0 23px 23px #fff;
+  cursor: pointer;
+  overflow: visible;
 }
 
 .pane.radiation .label {
-  position: absolute;
+  // position: absolute;
+  font-size: 1rem;
+}
+.pane.radiation:hover .label {
+  color: #000;
+  text-shadow: 0,0,1px, #fcf;
 }
