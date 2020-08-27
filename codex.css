@@ -1,9 +1,80 @@
+html {
+  font-size: 62.5%;
+}
 body {
-  background-color: #000;
+  // background-color: #000;
+  background-color: #444;
   color: #fff;
-  font-size: 3rem;
+  font-size: 1.8rem;
+  font-family: sans-serif;
+  background-image: url('bg-earth-night.jpg');
+  background-size: cover;
 }
 
-
+a {
+  color: #dff;
+  -webkit-transition: all 0.66s;
+    transition: all 0.66s;
+}
+a:hover {
+  color: #fff;
+}
 .main {
+}
+
+.pane {
+  position: relative;
+  background-color: rgba(0,0,0,0.8);
+  border: 1px solid #888;
+  padding: 2rem;
+  max-width: 60rem;
+  min-width: 40rem;
+  width: 50%;
+  max-height: 50%;
+  height: 30rem;
+  margin: auto;
+  -webkit-transition: all 0.66s;
+  transition: all 0.66s;
+  cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.pane-header {
+  font-size: 150%;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #333;
+  font-variant: small-caps;
+}
+
+.pane-excerpt {
+  font-size: 100%;
+  line-height: 1.6;
+}
+.thumbnail {
+  display: inline-block;
+}
+.full-link {
+  display: inline-block;
+  float: right;
+}
+
+.pane.small {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  font-size: 72%;
+  max-width: 10rem;
+  max-height: 10rem;
+  min-width: 5rem;
+  margin: 2rem;
+  display: inline-block;
+  -webkit-transition: all 0.66s;
+    transition: all 0.66s;
+}
+/* After the panel has been moved to a reasonable spot. */
+.pane.small.placed {
+  // top: 30rem;
 }
