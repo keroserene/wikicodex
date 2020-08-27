@@ -7,7 +7,8 @@ body {
   color: #fff;
   font-size: 1.8rem;
   font-family: sans-serif;
-  background-image: url('bg-earth-night.jpg');
+  // background-image: url('bg-earth-night.jpg');
+  background-image: url('galaxy.jpg');
   background-size: cover;
 }
 
@@ -22,26 +23,59 @@ a:hover {
 .main {
 }
 
+.main-header {
+  background-color: #000;
+  border-bottom: 1px solid #888;
+  display: block;
+  width: 100%;
+}
+
 .pane {
-  position: relative;
+  position: fixed;
   background-color: rgba(0,0,0,0.8);
   border: 1px solid #888;
-  padding: 2rem;
-  max-width: 60rem;
-  min-width: 40rem;
-  width: 50%;
-  max-height: 50%;
-  height: 30rem;
+  padding: 3rem;
+  // max-width: 60rem;
+  // min-width: 40rem;
+  // width: 40%;
+  // height: 40%;
+  max-width: 80rem;
+  // min-width: 20rem;
+  top: 50%;
+  left: 50%;
+  // max-height: 50%;
+  max-height: 40rem;
   margin: auto;
-  -webkit-transition: all 0.66s;
-  transition: all 0.66s;
+  -webkit-transition: all 1.2s;
+  transition: all 1.2s;
   cursor: default;
   overflow: hidden;
   text-overflow: ellipsis
   line-height: 1.6;
   color: #ccc;
+  // border-radius: 30%;
+  transform-origin: center;
+  -webkit-transform: translate(-50%, -50%);
+  opacity: 0;
+}
+/* The currently viewed wikipanel. */
+.pane.center {
+  box-shadow: 0,1,10,rgba(0,0,0,0.5);
+  max-width: 80rem;
+  opacity: 0.9;
 }
 
+/* Class Schema
+
+  pane is the base "panel" which is the root of all nodes.
+
+  - when it also contains .center, it means it's the central node.
+  There should only be one center at a time.
+  - small means it's an immediate neighbor of center - which will be arranged
+    radially below.
+  - radiation means it's a node that's known, but not actively related to the
+    current context, and will be in the background.
+*/
 .pane-header {
   font-size: 150%;
   margin-bottom: 1rem;
@@ -62,12 +96,11 @@ a:hover {
 }
 
 .pane.small {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  font-size: 72%;
-  max-width: 10rem;
-  max-height: 10rem;
+  position: fixed;
+  font-size: 100%;
+  font-weight: 900;
+  width: 10rem;
+  height: 10rem;
   min-width: 5rem;
   margin: 2rem;
   display: inline-block;
@@ -75,13 +108,31 @@ a:hover {
   -webkit-transition: all 0.66s;
     transition: all 0.66s;
   text-align: center;
-  opacity: 0.6;
+  opacity: 0.7;
+  -webkit-transform: translateX(-50%);
 }
 /* After the panel has been moved to a reasonable spot. */
-.pane.small.placed {
-  // top: 30rem;
-}
 .pane.small:hover {
   opacity: 1;
   cursor: pointer;
+  padding: 2.5rem;
+  width: 12rem;
+  height: 12rem;
+}
+
+/* radiation styles */
+.pane.radiation {
+  z-index: -1;
+  max-width: 2rem;
+  max-height: 2rem;
+  opacity: 0.5;
+  border-radius: 100%;
+  // -webkit-transition: all 4.66s;
+    // transition: all 4.66s;
+  font-size: 0.3rem;
+  padding: 0;
+}
+
+.pane.radiation .label {
+  position: absolute;
 }
