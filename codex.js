@@ -70,7 +70,7 @@ var default_params = {
   lhlimit: 23,
   // iwlinks: true,
   // pageids: pids,  TO BE FILLED
-  indexpageids: true,
+  indexpageid: true,
 };
 
 function fetchPageID(id) {
@@ -222,6 +222,7 @@ function demoteCenter() {
 // Take N links and arrange them radially around the central node.
 // |links| is expected to be the JSON response from the MediaWiki API within one
 // of the data elements of "response.query.pages".
+// The nodes can either be created anew, or found among the current universe.
 function arrangeNeighbors(links) {
   if (!links) {
     console.log('No gLevelOne qualified links.');
@@ -237,7 +238,6 @@ function arrangeNeighbors(links) {
   let spread_angle = (180 - root) * 2;
   let spread_increment = spread_angle / total;
   let spread_start = root + spread_increment / 2;
-  // console.log(total, max_spread, root, spread_angle, spread_increment);
 
   // Fill basic info and move the neighbor particle to level one.
   $.each(links, function(id, n) {
@@ -256,19 +256,18 @@ function arrangeNeighbors(links) {
 
     // Generate and radially arrange. If the node already exists in the
     // universe, make use of it.
-    let preexist = universe[n.pageid];
-    let $n = generateNeighbor(n, preexist);
-    if (!preexist) {
-      $n.appendTo($main);
-    }
+    // let preexist = universe[n.pageid];
+    let $node = generateNeighbor(n);
 
     let anim_delay = id * kAnimDelay;
-    $n.delay(anim_delay).queue(function() {
-      setParticleCoordinates($(this), x, y);
-      $(this).addClass('placed');
-    });
-    // let anim_delay = Math.random() * 300;
-    attachInteraction($n);
+    // $n.delay(anim_delay).queue(function() {
+    setTimeout(function() {
+    // $n.delay(anim_delay).queue(function() {
+      setParticleCoordinates($node, x, y);
+      $node.addClass('placed');
+      attachInteraction($node);
+    }, anim_delay);
+
   });
 }
 
@@ -286,33 +285,45 @@ function _radialPosition(angle) {
 // Sometimes the neighbor node is missing a pageid due to the MediaWiki API's
 // inconsistency. In this case, create a temporary id prefixed by 't', and
 // update the pageid when it's found.
-function generateNeighbor(data, $node) {
-  if (!$node) {
-    $node = $('<div class="pane small"></div>');
-    setParticleCoordinates($node, origins.x, origins.y);
+// function generateNeighbor(data, $node) {
+function generateNeighbor(data) {
+  // Check if the neighbor is already in the universe, first.
+  if (data.pageid in universe) {
+    $node = universe[data.pageid];
 
   } else {
-    // If the node already exists, just convert it back from radiation.
-    $node.removeClass('center');
-    $node.removeClass('radiation');
-    $node.addClass('small');
-    clearTimeout($node.browniantimer);  // If it comes from universe.
-    delete universe[data.pageid];     // Remove from the universe set so it
-                                      // doesn't get subject to brownian motion.
+    // Generate new one.
+    $node = $('<div class="pane small"></div>');
+    setParticleCoordinates($node, origins.x, origins.y);
+    $node.appendTo($main);
   }
 
+  // In any case, now that this node is a neighbor, make sure it's not
+  // radiation.
+  $node.removeClass('center radiation placed');
+  $node.addClass('small');
+
+  // clearTimeout($node.data.browniantimer);  // If it comes from universe.
+  // delete $node.data.browniantimer;
+  // console.log('clear', $node);
+  // delete universe[data.pageid];     // Remove from the universe set so it
+                                    // doesn't get subject to brownian motion.
+
+  // Make sure it only has the basic article title as the label.
   let txt = data.title.replace(' ','<br/>');
   let gen = '<div class="label">' + txt + '</div>';
-  // Add to main collection.
+  $node.html(gen);
+
+  // If this is a new node obtained via adjancy, and does not have a real pageID
+  // Set it up with a temporary ID.
   if (!data.pageid) {
     // console.log('Missing pageid.');
     data.pageid = 't' + nextId++;
   }
 
-  // reduceToLabel
-  $node.data = data; // Attach original API data reference.
-  gLevelOne[data.pageid] = $node;
-  $node.html(gen);
+  $node.data = data;  // Ensure API data reference is accessible from the node.
+  universe[data.pageid] = $node;  // Refresh it's existence in universe.
+  gLevelOne[data.pageid] = $node;  // Also put it in LEVEL ONE.
   return $node;
 }
 
@@ -329,31 +340,36 @@ function setParticleCoordinates(p, x, y) {
   $(p).css('top', y);
 }
 
+function _ageUniverse() {
+  // Age the current universe, and phase out old particles.
+  $.each(universe, function(i, n) {
+    if (!n) { return; }
+    let pid = n.data.pageid;
+    n.data.expiry--;
+    if (n.expiry <= 0) {
+      console.log('Node expired.', n);
+      deleteEdge(pid);
+      n.remove();
+      delete universe[pid];
+    }
+  });
+
+}
+
 /*
   Send all level / neighbor particles into background radiation.
 */
 function radiate(target) {
-  // Age the current universe, and phase out old particles.
-  $.each(universe, function(id, n) {
-    if (!n) { return; }
-    pageid = n.data.pageid;
-    n.expiry--;
-    if (n.expiry <= 0) {
-      console.log('expired...', n);
-      deleteEdge(pageid);
-      $(n).remove();
-      delete universe[pageid];
-    }
-  });
+  _ageUniverse();
 
   // Take current 1st level gLevelOne and prepare them as radiation particles.
   // The first time a particle goes into radiation, it must prepare for brownian
   // motion and expiry.
-  $.each(gLevelOne, function(id, n) {
-    if (!n) { return; }
-    $n = $(n);
-    $n.removeClass('small');
-    $n.addClass('radiation');
+  $.each(gLevelOne, function(i, n) {
+    // if (!n) { return; } this should never happen
+    // let $n = $(n);
+    n.removeClass('small placed');
+    n.addClass('radiation');
     // Randomize particle location.
     // let r = Math.random() * origins.radius * 1.8;
     // let a = Math.random() * 2 * Math.PI;
@@ -361,30 +377,31 @@ function radiate(target) {
     // let y = origins.y - Math.cos(a) * r;
     // setParticleCoordinates(n, x, y);
 
-    function _brownian() {
+    let _brownian = function() {
       let x = origins.width * Math.random();
       let y = origins.height * Math.random();
       setParticleCoordinates(n, x, y);
       n.delay(2500 + Math.random() * 5000).queue(_brownian);
-      clearTimeout(n.browniantimer);
-      n.browniantimer = setTimeout(_brownian, 2500 + Math.random() * 5000);
-    }
+      clearTimeout(n.data.browniantimer);
+      n.data.browniantimer = setTimeout(_brownian, 2500 + Math.random() * 5000);
+    };
 
     universe = Object.assign(universe, gLevelOne);
-    if (!n.expiry) {
-      n.expiry = 2;
+    if (!n.data.expiry) {
+      n.data.expiry = 2;
     }
-    n.browniantimer = setTimeout(function() {
-      n.addClass('star');
-      _brownian();
-    }, 100);
-    // console.log(universe[n.data.pageid]);
-    gLevelOne = {}; // Clear first level.
 
-    // Create an edge
+    // n.data.browniantimer = setTimeout(function() {
+      // n.addClass('star');
+      // _brownian();
+    // }, 100);
+
+    // console.log(universe[n.data.pageid]);
+    delete gLevelOne[n.data.pageid];
+    // Create an edge from each element to the radiation target.
     generateEdge(n, target);
   });
-  // Generate edges (svg)
+  gLevelOne = {}; // Clear first level.
 }
 
 
@@ -392,8 +409,9 @@ function radiate(target) {
 // Primary interaction is to focus on the new data node,
 // while causing previous neighbor nodes to radiate out into the universe.
 function attachInteraction($n) {
-  $n.unbind();
+  $n.unbind();  // Important, to prevent double event handlers.
   $n.click(function(e) {
+    $n.unbind();
     console.log('CLICKED NEIGHBOR', $n);
     // Prepare to promote current child to center, and shift it towards the center as well.
     $(this).off('click');
@@ -440,7 +458,7 @@ function examineNode($node) {
   console.log('Examining...', $node, data);
   delete universe[id];
   delete gLevelOne[id];
-  $center.expiry = 6;
+  $center.data.expiry = 6;
 
   // New center. Remove other classes and shoot upwards.
   $center = $node;
@@ -513,8 +531,8 @@ function drawEdges() {
     // Deletion when the destination node is missing.
     // When the src node is missing, the edge disappears automatically due to
     // the index.
-    if (!src || !src[0] || src.expiry <= 0 ||
-        !dest || !dest[0] || dest.expiry <= 0) {
+    if (!src || !src[0] || src.data.expiry <= 0 ||
+        !dest || !dest[0] || dest.data.expiry <= 0) {
       // !dest || dest.expiry <= 0) {
       // console.log('DELETE FROM DEST ID', dest.data.pageid, edge);
       // _deleteEdge(edge);
