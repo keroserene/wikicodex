@@ -3,6 +3,7 @@
 <head>
   <title>Wikipedia Codex</title>
   <link rel='stylesheet' href='codex.css'/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
@@ -10,12 +11,28 @@
 <div class='main-header'>
   <b>
   WikipediaCodex
-  v 0.0.1
+  v. 0.0.1
   </b><br/>
-  A pure client-side knowledge-graph visual interface.
+  A pure client-side knowledge graph traversal visualization.
 </div>
 
-<div class='main'></div>
+<div class='main'>
+
+  <div class='intro-text'>
+    Select Seed Node
+  </div>
+
+  <a class="level1 hidden" href="#" onclick="generateNeighbors()">&#9096;</a>
+
+  <!--
+  <div class='initial-orbs'>
+  <a href='#' class="orb">
+    Random
+  </a>
+  </div>
+  -->
+
+</div>
 <svg class="edges" id="edges" version="1.1"></svg>
 
 </body>

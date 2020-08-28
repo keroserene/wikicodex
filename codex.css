@@ -15,7 +15,7 @@ body {
 a {
   color: #dff;
   -webkit-transition: all 0.66s;
-    transition: all 0.66s;
+          transition: all 0.66s;
 }
 a:hover {
   color: #fff;
@@ -23,6 +23,21 @@ a:hover {
 .main {
 }
 
+.intro-text {
+  text-align: center;
+  padding-top: 30%;
+  pointer-events: none;
+  -webkit-transition: all 3.66s;
+          transition: all 3.66s;
+  font-size: 1.9rem;
+  font-family: sans-serif;
+  font-variant: small-caps;
+  text-shadow: 1px 4px 6px #000;
+  opacity: 0;
+}
+.intro-text.active {
+  opacity: 1;
+}
 .main-header {
   background-color: #000;
   border-bottom: 1px solid #888;
@@ -61,7 +76,7 @@ a:hover {
   max-height: 80rem;
   margin: auto;
   -webkit-transition: all 1.2s;
-  transition: all 1.2s;
+          transition: all 1.2s;
   cursor: default;
   overflow: hidden;
   // text-overflow: ellipsis;
@@ -75,10 +90,12 @@ a:hover {
 /* The currently viewed wikipanel. */
 .pane.center {
   box-shadow: 0,1,10,rgba(0,0,0,0.5);
-  max-width: 80rem;
+  // max-width: 80rem;
   opacity: 0.9 !important;
   z-index: 100;
-  overflow: visible;
+  // overflow: visible;
+  // min-width: 80rem;
+  width: 80rem;
 }
 .pane.center:hover { z-index: 1000; }
 
@@ -106,9 +123,9 @@ a:hover {
   position: absolute;
   left: 0; top: 0;
   width: 100%;
-  height: auto;
+  // height: auto;
   z-index: -1;
-  max-height: 80rem;
+  // max-height: 80rem;
 }
 .pane-main-image-buffer {
   /* Only necessary when pane-main-image is there. */
@@ -118,7 +135,8 @@ a:hover {
 
 .pane-content {
   background-color: rgba(0,0,0,0.77);
-  padding: 3rem 5rem;
+  min-height: 37rem;
+  padding: 3rem 5rem 0;
 }
 .pane-header {
   font-size: 150%;
@@ -171,7 +189,7 @@ a:hover {
 .pane .label {
   width: 200%;
   height: 100%;
-  padding-top: 25%;
+  padding-top: 35%;
   text-transform: uppercase;
   text-align: center;
   // color: #000;
@@ -180,7 +198,7 @@ a:hover {
 }
 .pane.small:hover .label {
   color: #fff;
-  text-shadow: 1,1,10px, #000;
+  text-shadow: 1px 4px 6px #000;
 }
 /* radiation styles */
 .pane.radiation {
@@ -199,6 +217,7 @@ a:hover {
   box-shadow: 0 0 23px 23px #fff;
   cursor: pointer;
   overflow: visible;
+  border-color: #aaa;
 }
 
 .pane.radiation .label {
@@ -207,7 +226,8 @@ a:hover {
 }
 .pane.radiation:hover .label {
   color: #000;
-  text-shadow: 0,0,1px, #fcf;
+  // text-shadow: 0,0,1px, #fcf;
+  text-shadow: 1px 4px 6px #fff;
 }
 /* Once its become a star, slow it way down. */
 .pane.radiation.star {
@@ -226,29 +246,100 @@ a:hover {
 }
 
 
+.initial-orbs {
+  display: block;
+  text-align: center;
+  width: 100%;
+  margin-top: 5rem;
+}
+.orb {
+  display: inline-block;
+  // padding: 3rem;
+  height: 11rem; width: 11rem;
+  // left: 50%;
+  font-size: 2rem; text-align: center;
+  line-height: 10rem;
+  color: #888;
+  // bottom: -20rem;
+  background-color: #000;
+  border-radius: 100%;
+  text-decoration: none;
+  // -webkit-transform: translate(-50%, -50%);
+          // transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 5 #000;
+  cursor: pointer;
+  font-variant: small-caps;
+}
+.orb:hover {
+  color: #fff;
+  box-shadow: 0 0 23px 23px rgba(255,255,255,0.8);
+}
+.orb:active {
+  box-shadow: 0 0 23px 23px rgba(0,0,0,0.8);
+  color: #000;
+}
+
 .level1 {
   display: block;
   padding: 3rem;
   height: 5rem; width: 5rem;
   position: absolute;
   left: 50%;
+  top: 60%;
   font-size: 5rem; text-align: center;
   line-height: 5rem;
   color: #888;
-  bottom: -20rem;
+  // bottom: -20rem;
   background-color: #000;
   border-radius: 100%;
   text-decoration: none;
   -webkit-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
   box-shadow: 0 0 0 5 #000;
+  opacity: 0.6;
+  z-index: 400;
+}
+.level1::after {
+  opacity: 0;
+  -webkit-transition: opacity 3s;
+          transition: opacity 3s;
 }
 .level1:hover {
   color: #fff;
   box-shadow: 0 0 23px 23px rgba(255,255,255,0.8);
+  opacity: 0.9;
+  z-index: 500;
 }
 .level1:active {
   box-shadow: 0 0 23px 23px rgba(0,0,0,0.8);
   color: #000;
 }
+.level1.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 
+.level1:hover::after {
+  position: absolute;
+  content: 'Enumerate Adjacent Nodes';
+  font-size: 1.4rem;
+  text-align: center;
+  bottom: -5rem;
+  left: 0;
+  line-height: 2rem;
+  text-overflow: nowrap;
+  // background-color: rgba(0,0,0,0.5);
+  text-shadow: 1px 4px 6px #000;
+  opacity: 1;
+}
+
+
+@media only screen and (max-width: 800px) {
+
+  .level1 {
+    position: fixed;
+    left: 50%; top: 10%;
+    width: 20%; height: 20%;
+  }
+
+}

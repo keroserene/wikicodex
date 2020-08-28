@@ -119,7 +119,7 @@ function parseAPIandUpdate(id, data) {
 
   // Parse neighbor nodes and have basic info ready.
   // TODO: make it do backlinks and forward links
-  arrangeNeighbors(neighbors);
+  // arrangeNeighbors(neighbors);
 }
 
 /* Parse |data| retrieved from the API and populate the center element. */
@@ -162,24 +162,35 @@ function generateCenter(data) {
     '<div class="pane-excerpt">' +
       extract +
     '</div>' +
-    '</div>'+
-    '<a class="level1" href="#" onclick="generateNeighbors()">&#9096;</a>';
+    '</div>';
+    // '<a class="level1" href="#" onclick="generateNeighbors()">&#9096;</a>';
+
+
+    // Reveal the open level 1 interaction.
 
   // Create center node if necessary.
   if ($center.length <= 0) {
     $center = $('<div class="pane"></div>');
     $center.appendTo($main);
   }
-
   // Fill out the interface details.
-  $center.html(htmlGen);
   setTimeout(function() {
+    $('.level1').removeClass('hidden');
     $center.addClass('center');
-  }, 10);
+  }, 800);
+
 
   // Make sure the other irrelevant classes are gone.
-  $center.removeClass('radiation star small placed');
-  $center.data = data;    // Important - must link the new data to the selector.
+  // $center.removeClass('star');
+  // $center.html('');
+  $center.wData = data;    // Important - must link the new data to the selector.
+
+  // Delay filling out the information.
+  setTimeout(function() {
+    $center.removeClass('radiation star small placed');
+    $center.addClass('center');
+    $center.html(htmlGen);
+  }, 500);
 
   // Position the center pane in the right spot.
   origins = parseDimensions();
@@ -194,6 +205,7 @@ function generateCenter(data) {
 /* Takes the current center node and removes its details, sending it into the
  * background radiation. */
 function demoteCenter() {
+  $('.level1').addClass('hidden');
   if (!$center) {
     $demoted = null;
     return;
@@ -203,7 +215,7 @@ function demoteCenter() {
   $center.removeClass('center');
   $demoted = $center;
   // $demoted.removeClass('small');
-  reduceToLabel($demoted)
+  reduceToLabel($demoted);
   $demoted.addClass('radiation');
   setParticleCoordinates($center, origins.x + (Math.random() * -0.5) * origins.radius, origins.y + origins.radius/2);
 
@@ -223,9 +235,13 @@ function demoteCenter() {
 
 
 function generateNeighbors() {
+  if (!maindata || !$center || !maindata.pageid) {
+    return;
+  }
   // links = maindata.links;
   // Remove the level 1 button.
-  $('.level1').remove();
+  // $('.level1').remove();
+  $('.level1').addClass('hidden');
 
   // Figure out all the neighbors for the first level,
   // and filter out links we don't care about.
@@ -237,7 +253,7 @@ function generateNeighbors() {
     // return !(e.redirect !== undefined) &&
     return !(e.pageid == maindata.pageid);
   });
-
+  console.log(neighbors);
   arrangeNeighbors(neighbors);
 }
 
@@ -327,8 +343,8 @@ function generateNeighbor(data) {
   $node.removeClass('center radiation placed');
   $node.addClass('small');
 
-  // clearTimeout($node.data.browniantimer);  // If it comes from universe.
-  // delete $node.data.browniantimer;
+  // clearTimeout($node.wData.browniantimer);  // If it comes from universe.
+  // delete $node.wData.browniantimer;
   // console.log('clear', $node);
   // delete universe[data.pageid];     // Remove from the universe set so it
                                     // doesn't get subject to brownian motion.
@@ -345,19 +361,25 @@ function generateNeighbor(data) {
     data.pageid = 't' + nextId++;
   }
 
-  $node.data = data;  // Ensure API data reference is accessible from the node.
+  $node.wData = data;  // Ensure API data reference is accessible from the node.
   universe[data.pageid] = $node;  // Refresh it's existence in universe.
   gLevelOne[data.pageid] = $node;  // Also put it in LEVEL ONE.
 
   // By definition, this node must have an edge with the current center.
+  // (If there is a center)
   generateEdge($node, $center);
   return $node;
 }
 
 function reduceToLabel(node) {
-  let txt = node.data.title.replace(' ','<br/>');
+  if (!node || !node.wData) { return; }
+  console.log('REDUCE', node);
+  // if (!node || !node.wData || node.wData.title) { return; } // No node to demote etc..
+  // console.log(node);
+  let txt = node.wData.title.replace(' ','<br/>');
   let gen = '<div class="label">' + txt + '</div>';
   node.html(gen);
+  console.log('ehh');
 }
 
 // Helper which just sets the target coordinate (px) of an element.
@@ -367,16 +389,16 @@ function setParticleCoordinates(p, x, y) {
   $(p).css('top', y);
 }
 
+// Age the current universe, and phase out old particles.
 function _ageUniverse() {
-  // Age the current universe, and phase out old particles.
-  $.each(universe, function(i, n) {
-    if (!n) { return; }
-    let pid = n.data.pageid;
-    n.data.expiry--;
-    if (n.expiry <= 0) {
-      console.log('Node expired.', n);
+  $.each(universe, function(i, node) {
+    if (!node) { return; }
+    let pid = node.wData.pageid;
+    node.wData.expiry--;
+    if (node.wData.expiry <= 0) {
+      // console.log('Node expired.', node);
       deleteEdge(pid);
-      n.remove();
+      node.remove();
       delete universe[pid];
     }
   });
@@ -405,13 +427,13 @@ function radiate(target) {
     // setParticleCoordinates(n, x, y);
     // All particles have an expiry - they will disappear from DOM and memory if
     // unnecessary.
-    if (!node.data.expiry) {
-      node.data.expiry = 3;
+    if (!node.wData.expiry) {
+      node.wData.expiry = 3;
     }
 
   // Begin brownian motion only for the stars.
   // $.each(universe, function(i, node) {
-    // if (!(node.data.pageid in gLevelOne)) {
+    // if (!(node.wData.pageid in gLevelOne)) {
       // beginBrownianMotion(node);
     // }
   // });
@@ -419,7 +441,7 @@ function radiate(target) {
 
     // console.log(universe[n.data.pageid]);
     // Purge from level one because it's no longer necessarily a neighbor.
-    delete gLevelOne[node.data.pageid];
+    delete gLevelOne[node.wData.pageid];
     beginBrownianMotion(node);
   });
   gLevelOne = {}; // Clear first level.
@@ -432,50 +454,58 @@ function beginBrownianMotion(node) {
     let y = origins.height * Math.random();
     setParticleCoordinates(node, x, y);
     // node.delay(2500 + Math.random() * 5000).queue(_brownian);
-    clearTimeout(node.data.browniantimer);
-    node.data.browniantimer = setTimeout(_brownian, 2500 + Math.random() * 5000);
+    clearTimeout(node.browniantimer);
+    node.browniantimer = setTimeout(_brownian, 2500 + Math.random() * 5000);
   };
 
   // universe = Object.assign(universe, gLevelOne);
 
   // Initial timer gets the star moving.
-  node.data.browniantimer = setTimeout(function() {
+  node.browniantimer = setTimeout(function() {
     node.addClass('star');
     _brownian();
   }, 100);
 }
 
 function stopBrownianMotion(node) {
-  clearTimeout(node.data.browniantimer);
+  clearTimeout(node.browniantimer);
 }
 
 // Setup click interactions.
 // Primary interaction is to focus on the new data node,
 // while causing previous neighbor nodes to radiate out into the universe.
-function attachInteraction($n) {
-  $n.unbind();  // Important, to prevent double event handlers.
-  $n.click(function(e) {
-    $n.unbind();
-    console.log('CLICKED NEIGHBOR', $n);
+function attachInteraction(node) {
+  node.unbind();  // Important, to prevent double event handlers.
+  node.click(function(e) {
+    node.unbind();
+    node.wData.expiry = 10; // Make sure this node doesn't expire anytime soon.
+    // Remove the intro text if it exists.
+    let intro = $('.intro-text');
+    if (intro[0]) {
+      intro.removeClass('active');
+      setTimeout(function() { intro.remove(); }, 500);
+    }
+    $('.level1').addClass('hidden');
+
+    console.log('CLICKED NEIGHBOR', node);
     // Prepare to promote current child to center, and shift it towards the center as well.
     $(this).off('click');
     $pending = $(this);
-    delete gLevelOne[$n.data.pageid];
+    delete gLevelOne[node.wData.pageid];
     // setParticleCoordinates($pending, origins.x, origins.y - origins.radius);
     // setParticleCoordinates($pending, origins.x, origins.y);
 
     // Radiate the current center into the universe.
     demoted = demoteCenter();
     radiate(demoted);
-
-    examineNode($n);
+    examineNode(node);
     // All other nodes except the center. The center must be treated specially.
 
     // Delay the new page examination / load slightly.
     setTimeout(function() {
       $pending.addClass('center');
       $pending.removeClass('small star');
-      clearTimeout($n.browniantimer);
+      clearTimeout(node.browniantimer);
     }, 420);
   });
 }
@@ -497,17 +527,15 @@ function parseDimensions() {
 returns True or success.
 */
 function examineNode($node) {
-  let data = $node.data;
+  let data = $node.wData;
   let id = '' + data.pageid;
   console.log('Examining...', $node, data);
-  // delete universe[id];
   delete gLevelOne[id];
   stopBrownianMotion($node);
 
   // New center. Remove other classes and shoot upwards.
   $center = $node;
   $center.removeClass('star small');
-  // $center.addClass('center');
   setParticleCoordinates($center, origins.x, origins.y - origins.radius);
 
   // This node does not have a pageid yet, so we have to search by Title
@@ -526,7 +554,10 @@ function examineNode($node) {
 }
 
 function generateEdge(src, dest) {
-  let key = src.data.pageid + '-' + dest.data.pageid;
+  if (!src || !dest) {
+    return;
+  }
+  let key = src.wData.pageid + '-' + dest.wData.pageid;
   // Skip if edge already exists.
   if (edges[key]) {
     return;
@@ -575,8 +606,8 @@ function drawEdges() {
     // Deletion when the destination node is missing.
     // When the src node is missing, the edge disappears automatically due to
     // the index.
-    if (!src || !src[0] || src.data.expiry <= 0 ||
-        !dest || !dest[0] || dest.data.expiry <= 0) {
+    if (!src || !src[0] || src.wData.expiry <= 0 ||
+        !dest || !dest[0] || dest.wData.expiry <= 0) {
       // !dest || dest.expiry <= 0) {
       // console.log('DELETE FROM DEST ID', dest.data.pageid, edge);
       // _deleteEdge(edge);
@@ -603,9 +634,25 @@ $(document).ready(function() {
   // let first = 27667;
   let spacetime = 28758;
   // let boganyi = 12765628;
-  $(this).delay(10).queue(function() {
-    fetchPageID(spacetime);
+  let intro = $('.intro-text');
+  $(this).delay(100).queue(function() {
+    // fetchPageID(spacetime);
+    intro.addClass('active');
   });
+
+  // Hard-coded initial options.
+  let initLinks = [
+    { pageid: 18839,      title: 'Music', },
+    { pageid: 752,        title: 'Art', },
+    { pageid: 13692155,   title: 'Philosophy', },
+    { pageid: 18831,      title: 'Math' },
+    { pageid: 26700,      title: 'Science', },
+    { pageid: 28758,      title: 'Spacetime' },
+    // { pageid: 26700,      title: 'Science', }
+  ];
+  arrangeNeighbors(initLinks);
+
+  // Populate with a variety of topics
 
   $center = $('.pane.center');
   svgroot = document.getElementById('edges');
@@ -616,8 +663,16 @@ $(document).ready(function() {
 
 // document.keypress(function(e) {
 document.onkeydown = (function(e) {
-  console.log(e);
+  // console.log(e);
   if ('Escape' === e.key) {
     demoteCenter();
+  }
+  // Shortcut for expand full page.
+  if ('o' === e.key || 'Enter' === e.key) {
+    $('.pane-full-link')[0].click();
+  }
+  // Shortcut for neighbors
+  if (' ' === e.key || 'n' === e.key) {
+    generateNeighbors();
   }
 });
