@@ -99,7 +99,7 @@ function _fetchQuery(params) {
       // console.log(response.query);
       // var alllinks = response.query.alllinks;
       $.each(response.query.pages, function(id, data) {
-        parseAPIdata(id, data);
+        parseAPIandUpdate(id, data);
         // console.log(pane);
       });
     })
@@ -110,20 +110,12 @@ function _fetchQuery(params) {
 
 // General entry point for reception of the MediaWiki API.
 // Since some data will require continuations, this will handle the async pulls.
-function parseAPIdata(id, data) {
+// Updates the interface afterwards, in the most sensible way possible.
+function parseAPIandUpdate(id, data) {
   maindata = data;
   generateCenter(data);
 
-  // Figure out all the neighbors for the first level,
-  // and filter out links we don't care about.
-  let neighbors = [];
-  neighbors = neighbors
-    // .concat(data.links)
-    .concat(data.linkshere);
-  neighbors = neighbors.filter(function(e) {
-    // return !(e.redirect !== undefined) &&
-    return !(e.pageid == maindata.pageid);
-  });
+  return;
 
   // Parse neighbor nodes and have basic info ready.
   // TODO: make it do backlinks and forward links
@@ -156,7 +148,10 @@ function generateCenter(data) {
   // $center = $('.pane.center');
   let htmlGen = '' +
     _parseMainImage(data) +
-    '<a class="pane-full-link" href="' + fullUrl + '" target="_blank">' +
+    '<a class="pane-minimize pane-link" href="#" onclick="demoteCenter()">' +
+      '&#x02795; minimize' +
+    '</a>' +
+    '<a class="pane-full-link pane-link" href="' + fullUrl + '" target="_blank">' +
       '&#x02795; view full page' +
     '</a>' +
     '<div class="pane-content">' +
@@ -166,7 +161,9 @@ function generateCenter(data) {
     '</div>' +
     '<div class="pane-excerpt">' +
       extract +
-    '</div></div>';
+    '</div>' +
+    '</div>'+
+    '<a class="level1" href="#" onclick="generateNeighbors()">&#9096;</a>';
 
   // Create center node if necessary.
   if ($center.length <= 0) {
@@ -197,6 +194,10 @@ function generateCenter(data) {
 /* Takes the current center node and removes its details, sending it into the
  * background radiation. */
 function demoteCenter() {
+  if (!$center) {
+    $demoted = null;
+    return;
+  }
   maindata.expiry = 5;
 
   $center.removeClass('center');
@@ -212,12 +213,33 @@ function demoteCenter() {
     }
     $demoted.addClass('radiation star');
     attachInteraction($demoted);
+    beginBrownianMotion($demoted);
   // setParticleCoordinates($demoted, origins.x, origins.y + origins.radius*0.3);
   }, 450);
 
+  $center = null;
   return $demoted;
 }
 
+
+function generateNeighbors() {
+  // links = maindata.links;
+  // Remove the level 1 button.
+  $('.level1').remove();
+
+  // Figure out all the neighbors for the first level,
+  // and filter out links we don't care about.
+  let neighbors = [];
+  neighbors = neighbors
+    // .concat(data.links)
+    .concat(maindata.linkshere);
+  neighbors = neighbors.filter(function(e) {
+    // return !(e.redirect !== undefined) &&
+    return !(e.pageid == maindata.pageid);
+  });
+
+  arrangeNeighbors(neighbors);
+}
 
 // Take N links and arrange them radially around the central node.
 // |links| is expected to be the JSON response from the MediaWiki API within one
@@ -298,6 +320,8 @@ function generateNeighbor(data) {
     $node.appendTo($main);
   }
 
+  stopBrownianMotion($node);
+
   // In any case, now that this node is a neighbor, make sure it's not
   // radiation.
   $node.removeClass('center radiation placed');
@@ -324,6 +348,9 @@ function generateNeighbor(data) {
   $node.data = data;  // Ensure API data reference is accessible from the node.
   universe[data.pageid] = $node;  // Refresh it's existence in universe.
   gLevelOne[data.pageid] = $node;  // Also put it in LEVEL ONE.
+
+  // By definition, this node must have an edge with the current center.
+  generateEdge($node, $center);
   return $node;
 }
 
@@ -365,45 +392,62 @@ function radiate(target) {
   // Take current 1st level gLevelOne and prepare them as radiation particles.
   // The first time a particle goes into radiation, it must prepare for brownian
   // motion and expiry.
-  $.each(gLevelOne, function(i, n) {
+  $.each(gLevelOne, function(i, node) {
     // if (!n) { return; } this should never happen
     // let $n = $(n);
-    n.removeClass('small placed');
-    n.addClass('radiation');
+    node.removeClass('small placed');
+    node.addClass('radiation');
     // Randomize particle location.
     // let r = Math.random() * origins.radius * 1.8;
     // let a = Math.random() * 2 * Math.PI;
     // let x = origins.x + Math.sin(a) * r;
     // let y = origins.y - Math.cos(a) * r;
     // setParticleCoordinates(n, x, y);
-
-    let _brownian = function() {
-      let x = origins.width * Math.random();
-      let y = origins.height * Math.random();
-      setParticleCoordinates(n, x, y);
-      n.delay(2500 + Math.random() * 5000).queue(_brownian);
-      clearTimeout(n.data.browniantimer);
-      n.data.browniantimer = setTimeout(_brownian, 2500 + Math.random() * 5000);
-    };
-
-    universe = Object.assign(universe, gLevelOne);
-    if (!n.data.expiry) {
-      n.data.expiry = 2;
+    // All particles have an expiry - they will disappear from DOM and memory if
+    // unnecessary.
+    if (!node.data.expiry) {
+      node.data.expiry = 3;
     }
 
-    // n.data.browniantimer = setTimeout(function() {
-      // n.addClass('star');
-      // _brownian();
-    // }, 100);
+  // Begin brownian motion only for the stars.
+  // $.each(universe, function(i, node) {
+    // if (!(node.data.pageid in gLevelOne)) {
+      // beginBrownianMotion(node);
+    // }
+  // });
+    // Create an edge from each element to the radiation target.
 
     // console.log(universe[n.data.pageid]);
-    delete gLevelOne[n.data.pageid];
-    // Create an edge from each element to the radiation target.
-    generateEdge(n, target);
+    // Purge from level one because it's no longer necessarily a neighbor.
+    delete gLevelOne[node.data.pageid];
+    beginBrownianMotion(node);
   });
   gLevelOne = {}; // Clear first level.
 }
 
+function beginBrownianMotion(node) {
+  // Iteration of next motion phase.
+  let _brownian = function() {
+    let x = origins.width * Math.random();
+    let y = origins.height * Math.random();
+    setParticleCoordinates(node, x, y);
+    // node.delay(2500 + Math.random() * 5000).queue(_brownian);
+    clearTimeout(node.data.browniantimer);
+    node.data.browniantimer = setTimeout(_brownian, 2500 + Math.random() * 5000);
+  };
+
+  // universe = Object.assign(universe, gLevelOne);
+
+  // Initial timer gets the star moving.
+  node.data.browniantimer = setTimeout(function() {
+    node.addClass('star');
+    _brownian();
+  }, 100);
+}
+
+function stopBrownianMotion(node) {
+  clearTimeout(node.data.browniantimer);
+}
 
 // Setup click interactions.
 // Primary interaction is to focus on the new data node,
@@ -456,9 +500,9 @@ function examineNode($node) {
   let data = $node.data;
   let id = '' + data.pageid;
   console.log('Examining...', $node, data);
-  delete universe[id];
+  // delete universe[id];
   delete gLevelOne[id];
-  $center.data.expiry = 6;
+  stopBrownianMotion($node);
 
   // New center. Remove other classes and shoot upwards.
   $center = $node;
@@ -567,4 +611,13 @@ $(document).ready(function() {
   svgroot = document.getElementById('edges');
   console.log(svgroot);
   window.requestAnimationFrame(drawEdges);
+
+});
+
+// document.keypress(function(e) {
+document.onkeydown = (function(e) {
+  console.log(e);
+  if ('Escape' === e.key) {
+    demoteCenter();
+  }
 });

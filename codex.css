@@ -78,26 +78,37 @@ a:hover {
   max-width: 80rem;
   opacity: 0.9 !important;
   z-index: 100;
+  overflow: visible;
 }
 .pane.center:hover { z-index: 1000; }
 
-.pane-full-link {
+.pane-link {
   position: absolute;
-  top:0;right:0;
   background-color: rgba(0,0,0,0.5);
   font-size: 80%;
   font-variant: small-caps;
   padding: 1rem 1rem;
   text-decoration: none;
-} .pane-full-link:hover {
+}
+.pane-link:hover {
   background-color: rgba(255,255,255,0.5);
   cursor: pointer;
 }
+
+.pane-full-link {
+  top:0;right:0;
+}
+.pane-minimize {
+  top:0;left:0;
+}
+
 .pane-main-image {
   position: absolute;
   left: 0; top: 0;
   width: 100%;
+  height: auto;
   z-index: -1;
+  max-height: 80rem;
 }
 .pane-main-image-buffer {
   /* Only necessary when pane-main-image is there. */
@@ -213,3 +224,31 @@ a:hover {
   stroke-width: 1;
   z-index: -10;
 }
+
+
+.level1 {
+  display: block;
+  padding: 3rem;
+  height: 5rem; width: 5rem;
+  position: absolute;
+  left: 50%;
+  font-size: 5rem; text-align: center;
+  line-height: 5rem;
+  color: #888;
+  bottom: -20rem;
+  background-color: #000;
+  border-radius: 100%;
+  text-decoration: none;
+  -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 5 #000;
+}
+.level1:hover {
+  color: #fff;
+  box-shadow: 0 0 23px 23px rgba(255,255,255,0.8);
+}
+.level1:active {
+  box-shadow: 0 0 23px 23px rgba(0,0,0,0.8);
+  color: #000;
+}
+
