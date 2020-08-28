@@ -9,13 +9,9 @@ Depends on the MediaWiki API.
 var $main = $('.main');
 var $center = null;
 var maindata = {};
-// Constant dimensions (%) for the center pane.
-var CENTER_DIMENSIONS = {
-  WIDTH: 0.5,
-  HEIGHT: 0.5,
-}
+
 // Generalized collections
-neighbors = {};  // Level one particles - immediately linked with the current center.
+gLevelOne = {};  // Level one particles - immediately linked with the current center.
 universe = {};   // All background particles.
 
 // Origin page IDs.
@@ -27,41 +23,64 @@ universe = {};   // All background particles.
 */
 var API_base = 'https://en.wikipedia.org/w/api.php';
 var API_url = API_base + "?origin=*";
-var origins = parseDimensions();
+// Constant dimensions (%) for the center pane.
+var CENTER_DIMENSIONS = {
+  WIDTH: 0.5,
+  HEIGHT: 0.5,
+}
+var kAnimDelay = 23;
+var kMaxParticles = 1000;
 
-// Trigger.
+var origins = parseDimensions();
+var nextId = 0;
+
+
+var default_params = {
+  action: 'query',
+  // meta: 'siteinfo',
+  // list: "querypage",
+  // list: "alllinks, random",
+  // qppage: "Uncategorizedpages",
+  // qplimit: "10",
+  format: 'json',
+  exintro: true,
+  explaintext: true,
+  // list: 'backlinks',
+  // params for backlinks:
+  // blpageid: pids[0],
+  prop: 'info|extracts|pageimages|links|linkshere',
+  // prop: 'info|extracts|linkshere',
+  piprop: 'thumbnail|original|name',
+  inprop: 'url',
+  // prop: 'info',
+  // linkshere: true,
+  lhprop: 'pageid|title|redirect',
+  lprop: 'pageid|title|redirect',
+  lhnamespace: '0',  // Limit to only normal articles.
+  lnshow: '!redirect',
+  plnamespace: '0',
+  iwurl: true,
+  lhlimit: 33,
+  // iwlinks: true,
+  // pageids: pids,  TO BE FILLED
+  indexpageids: true,
+};
+
 function fetchPageID(id) {
-  let url = API_url;
+  let params = JSON.parse(JSON.stringify(default_params));
   var pids = [id];
-  // Parse params.
-  // TODO: Organize this much better.
-  var params = {
-    action: 'query',
-    // meta: 'siteinfo',
-    // list: "querypage",
-    // list: "alllinks, random",
-    // qppage: "Uncategorizedpages",
-    // qplimit: "10",
-    format: 'json',
-    exintro: true,
-    explaintext: true,
-    // list: 'backlinks',
-    // params for backlinks:
-    // blpageid: pids[0],
-    prop: 'info|extracts|pageimages|linkshere',
-    // prop: 'info|extracts|linkshere',
-    piprop: 'thumbnail|original|name',
-    inprop: 'url',
-    // prop: 'info',
-    // linkshere: true,
-    lhprop: 'pageid|title|redirect',
-    lhnamespace: '0',  // Limit to only normal articles.
-    iwurl: true,
-    iwlimit: 50,
-    // iwlinks: true,
-    pageids: pids,
-    indexpageids: true,
-  };
+  params.pageids = pids;
+  fetchQuery(params);
+}
+
+function fetchPageByTitle(title) {
+  let params = JSON.parse(JSON.stringify(default_params));
+  params.titles = [title];
+  fetchQuery(params);
+}
+
+function fetchQuery(params) {
+  let url = API_url;
   // Convert params into url query string.
   Object.keys(params).forEach(function(key){url += "&" + key + "=" + params[key];});
   fetch(url)
@@ -82,16 +101,15 @@ function fetchPageID(id) {
     });
 }
 
-// General entry point for reception of the MediaWiki API.
-// Since some data will require continuations, this will handle the async pulls.
-function parseAPIdata(id, data) {
-  maindata = data;
-  console.log('Page Data for ' + id);
+/* Parse |data| retrieved from the API and populate the center pane DOM
+ * elements. */
+function generateCenter(data) {
+  console.log('Page Data for ' + data.pageid);
   console.log(data);
+
   let title = data.title;
   let extract = data.extract;
   let fullUrl = data.fullurl || 'unknown';
-
   function _parseMainImage(data) {
     if (!data.original|| !data.original.source) {
       return '';
@@ -105,6 +123,7 @@ function parseAPIdata(id, data) {
     }
     return '<img class="thumbnail" src="' + data.thumbnail.source + '"/>';
   }
+
   // Create or add the center pane to the domtree.
   $center = $('.pane.center');
   let htmlGen = '' +
@@ -114,7 +133,7 @@ function parseAPIdata(id, data) {
     '</a>' +
     '<div class="pane-content">' +
     '<div class="pane-header">' +
-    // _parseThumbnail(data) + 
+    // _parseThumbnail(data) +
     title +
     '</div>' +
     '<div class="pane-excerpt">' +
@@ -134,17 +153,84 @@ function parseAPIdata(id, data) {
     $center.html(htmlGen);
   }
 
+  // Position the center pane in the right spot.
   origins = parseDimensions();
-  radiate();
   // Calculate position for the center pane.
   // let pW = CENTER_DIMENSIONS.WIDTH * origins.width;
   let pH = CENTER_DIMENSIONS.HEIGHT * origins.height;
   let x = origins.x; // - pW/2;
   let y = origins.y - origins.radius/2;
   setParticleCoordinates($center, x, y);
+}
+
+// Take N links and arrange them radially around the central node.
+// |links| is expected to be the JSON response from the MediaWiki API within one
+// of the data elements of "response.query.pages".
+function arrangeNeighbors(links) {
+  if (!links) {
+    console.log('No gLevelOne qualified links.');
+    return;
+  }
+  console.log('ARRANGE NEIGHBORS', links);
+  origins = parseDimensions();
+
+  let total = links.length;
+  // Begins at 180 degrees (0600) but winds back towards 0200 as N -> inf
+  let max_spread = 240;
+  let root = 60 + (1.0 / total) * (max_spread / 2.0);
+  let spread_angle = (180 - root) * 2;
+  let spread_increment = spread_angle / total;
+  let spread_start = root + spread_increment / 2;
+  // console.log(total, max_spread, root, spread_angle, spread_increment);
+
+  // Fill basic info and move the neighbor particle to level one.
+  $.each(links, function(id, n) {
+
+    // Set position based on angle calculation.
+    let angle = spread_start + (spread_increment * id);
+    let angleR = angle * Math.PI / 180.0;
+    // Bearing of 0-degrees being "North", going clockwise.
+    // Bump the radius if there's a lot.
+    let radius = origins.radius;
+    if (total > 12) {
+      radius += (120 * (id % 3));
+    }
+    let x = origins.x + Math.sin(angleR) * radius;
+    let y = origins.y - 30 - Math.cos(angleR) * radius;
+
+    // Generate and radially arrange.
+    let $n = generateNeighborNode(n);
+    $n.appendTo($main);
+    let anim_delay = id * kAnimDelay;
+    $n.delay(anim_delay).queue(function() {
+      setParticleCoordinates($(this), x, y);
+      $(this).addClass('placed');
+    });
+    // let anim_delay = Math.random() * 300;
+    attachInteraction($n);
+  });
+}
+
+// General entry point for reception of the MediaWiki API.
+// Since some data will require continuations, this will handle the async pulls.
+function parseAPIdata(id, data) {
+  maindata = data;
+  generateCenter(data);
+
+  // Figure out all the neighbors for the first level,
+  // and filter out links we don't care about.
+  let neighbors = [];
+  neighbors = neighbors
+    .concat(data.links)
+    .concat(data.linkshere);
+  neighbors = neighbors.filter(function(e) {
+    // return !(e.redirect !== undefined) &&
+    return !(e.pageid == maindata.pageid);
+  });
+
   // Parse neighbor nodes and have basic info ready.
   // TODO: make it do backlinks and forward links
-  arrangeNeighbors(data.linkshere);
+  arrangeNeighbors(neighbors);
 }
 
 /* Aesthetics - related nodes shall relate radially from the central node, the
@@ -156,9 +242,12 @@ function parseAPIdata(id, data) {
 function _radialPosition(angle) {
 }
 
-// Generate the DOM element for a neighbor node and position it in the
-// appropriate spot.
-function createNeighborNode(data, $node) {
+// Generate or select the DOM element corresponding to the neighbor node,
+// and position it in the appropriate spot.
+// Sometimes the neighbor node is missing a pageid due to the MediaWiki API's
+// inconsistency. In this case, create a temporary id prefixed by 't', and
+// update the pageid when it's found.
+function generateNeighborNode(data, $node) {
   if (!$node) {
     $node = $('<div class="pane small"></div>');
   } else {
@@ -173,15 +262,16 @@ function createNeighborNode(data, $node) {
             // ';top:'+origins.y+'">' +
   let txt = data.title.replace(' ','<br/>');
   let gen = '<div class="label">' + txt + '</div>';
-    // '<br/>' + n.pageid + '\n<br/>'  +
-    // angle + '\n' + parseInt(x) + '\n' + parseInt(y) +
-    // '</div>';
-  $node.html(gen);
-
-  $node.data = data; // Attach original API data reference.
 
   // Add to main collection.
-  neighbors[data.pageid] = $node;
+  if (!data.pageid) {
+    console.log('Missing pageid.');
+    data.pageid = 't' + nextId++;
+  }
+
+  $node.data = data; // Attach original API data reference.
+  gLevelOne[data.pageid] = $node;
+  $node.html(gen);
   return $node;
 }
 
@@ -193,98 +283,82 @@ function setParticleCoordinates(p, x, y) {
 }
 
 /*
-  Send all particles to background radiation.
+  Send all level / neighbor particles into background radiation.
 */
 function radiate() {
+  // Age the current universe, and phase out old particles.
+  $.each(universe, function(id, n) {
+    if (!n) { return; }
+    n.expiry--;
+    if (n.expiry <= 0) {
+      console.log('expired');
+      $(n).remove();
+      delete universe[id];
+    }
+  });
 
-  // Take current 1st level neighbors and prepare them as radiation particles.
-  $.each(neighbors, function(id, n) {
-    $(n).removeClass('small');
-    $(n).addClass('radiation');
-
+  // Take current 1st level gLevelOne and prepare them as radiation particles.
+  // The first time a particle goes into radiation, it must prepare for brownian
+  // motion and expiry.
+  $.each(gLevelOne, function(id, n) {
+    if (!n) { return; }
+    $n = $(n);
+    $n.removeClass('small');
+    $n.addClass('radiation');
     // Randomize particle location.
     let r = Math.random() * origins.radius * 1.8;
     let a = Math.random() * 2 * Math.PI;
     let x = origins.x + Math.sin(a) * r;
     let y = origins.y - Math.cos(a) * r;
-    setParticleCoordinates(n, x, y);
 
-    universe = Object.assign(universe, neighbors);
-    neighbors = {}; // Clear first level.
+    function _brownian() {
+      // let r = Math.random() * origins.radius * 1.8;
+      // let a = Math.random() * 2 * Math.PI;
+      let x = origins.width * Math.random();
+      let y = origins.height * Math.random();
+      setParticleCoordinates(n, x, y);
+      n.delay(2500 + Math.random() * 5000).queue(_brownian);
+      setTimeout(_brownian, 2500 + Math.random() * 5000);
+    }
+
+    setParticleCoordinates(n, x, y);
+    universe = Object.assign(universe, gLevelOne);
+    n.expiry = 3;
+    setTimeout(function() {
+      n.addClass('star');
+      _brownian();
+    });
+    // console.log(universe[n.data.pageid]);
+    gLevelOne = {}; // Clear first level.
   });
 
 }
 
-// Take N links and arrange them radially around the central node.
-// |links| is expected to be the JSON response from the MediaWiki API within one
-// of the data elements of "response.query.pages".
-function arrangeNeighbors(links) {
-  if (!links) {
-    console.log('No neighbors for this link.');
-    return;
-  }
-  console.log('ARRANGE NEIGHBORS', links);
+function brownianMotion() {
+}
 
-  origins = parseDimensions();
+// Setup click interactions.
+// Primary interaction is to focus on the new data node,
+// while causing previous neighbor nodes to radiate out into the universe.
+function attachInteraction($n) {
+  $n.click(function(e) {
+    console.log('CLICKED NEIGHBOR', $n);
+    // Prepare to promote current child to center.
+    $(this).off('click');
+    $pending = $(this);
+    delete gLevelOne[$n.data.pageid];
+    setParticleCoordinates($pending, origins.x, origins.y - origins.radius);
+    // Radiate the current center into the universe.
+    $demoted = generateNeighborNode(maindata, $center);
+    setParticleCoordinates($demoted, origins.x, origins.y - origins.radius*0.3);
+    radiate();
 
-  let total = links.length;
-  // Begins at 180 degrees (0600) but winds back towards 0200 as N -> inf
-  let max_spread = 240;
-  let root = 60 + (1.0 / total) * (max_spread / 2.0);
-  let spread_angle = (180 - root) * 2;
-  let spread_increment = spread_angle / total;
-  let spread_start = root + spread_increment / 2;
-
-  console.log(total, max_spread, root, spread_angle, spread_increment);
-
-  // Fill basic info and move the neighbor particle to level one.
-  $.each(links, function(id, n) {
-
-    // Set position based on angle calculation.
-    let angle = spread_start + (spread_increment * id);
-    let angleR = angle * Math.PI / 180.0;
-    // Bearing of 0-degrees being "North", going clockwise.
-    let x = origins.x + Math.sin(angleR) * origins.radius;
-    let y = origins.y - 30 - Math.cos(angleR) * origins.radius;
-    // console.log(id, n, angle, angleR, x, y);
-
-    // Generate and radially arrange all neighbor nodes.
-    let $n = createNeighborNode(n);
-    $n.appendTo($main);
-    // let anim_delay = Math.random() * 300;
-    let anim_delay = id * 50;
-    $n.delay(anim_delay).queue(function() {
-      setParticleCoordinates($(this), x, y);
-    });
-
-    // Setup click interactions.
-    $n.click(function(e) {
-      console.log('CLICKED NEIGHBOR', $n);
-
-      // Prepare to promote current child to center.
-      $(this).off('click');
-      $pending = $(this);
-      neighbors[n.pageid] = undefined;
-      setParticleCoordinates($pending, origins.x, origins.y - origins.radius);
-
-      radiate();
-
-      // Add current center into the neighbors.
-      $demoted = createNeighborNode(maindata, $center);
-      setParticleCoordinates($demoted, origins.x, origins.y - origins.radius*0.3);
-      // $pending.css('left', origins.x);
-      // $pending.css('top', origins.y);
-      console.log($n);
-      console.log(n.pageid);
-
-      // Delay the new page examination / load slightly.
-      setTimeout(function() {
-        $pending.removeClass('small');
-        $pending.addClass('center');
-
-        examineNode(n.pageid);
-      }, 420);
-    });
+    // Delay the new page examination / load slightly.
+    setTimeout(function() {
+      $pending.removeClass('small');
+      $pending.addClass('center');
+      examineNode($n.data);
+    }, 420);
   });
 }
 
@@ -301,11 +375,25 @@ function parseDimensions() {
   };
 }
 
-/* Primary function which handles shifting the view to a new node. */
-function examineNode(pageid) {
-  // $main.empty();
-  fetchPageID(pageid);
-
+/* Primary function which handles shifting the view to a new node.
+returns True or success.
+*/
+function examineNode(data) {
+  let id = '' + data.pageid;
+  console.log(data);
+  if (id.startsWith('t')) {
+    // This node does not have a pageid yet, so we have to search by Title
+    // instead.
+    let title = data.title;
+    if (!title) {
+      return false;
+    }
+    fetchPageByTitle(data.title);
+    return;
+  }
+  // Default operation uses pageids.
+  fetchPageID(id)
+  return true;
 }
 
 $(document).ready(function() {

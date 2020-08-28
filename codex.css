@@ -77,8 +77,9 @@ a:hover {
   box-shadow: 0,1,10,rgba(0,0,0,0.5);
   max-width: 80rem;
   opacity: 0.9;
-  z-index: 1000;
+  z-index: 100;
 }
+.pane.center:hover { z-index: 1000; }
 
 .pane-full-link {
   position: absolute;
@@ -125,6 +126,9 @@ a:hover {
   display: inline-block;
 }
 
+.pane.small.placed {
+  opacity: 0.7;
+}
 .pane.small {
   position: fixed;
   font-size: 100%;
@@ -138,7 +142,6 @@ a:hover {
   -webkit-transition: all 0.66s;
     transition: all 0.66s;
   text-align: center;
-  opacity: 0.7;
   border-color: #000;
   // background-color: rgba(255,255,255,0.8);
 }
@@ -151,6 +154,7 @@ a:hover {
   box-shadow: 0 0 23px 6px rgba(255,255,255,0.5);
   // box-shadow: 0 0 23px 23px rgba(0,0,0,0.8);
   border-color: #111;
+  z-index: 1000;
 }
 
 .pane .label {
@@ -176,8 +180,6 @@ a:hover {
   background-color: #fff;
   opacity: 0.8;
   border-radius: 100%;
-  // -webkit-transition: all 4.66s;
-    // transition: all 4.66s;
   font-size: 0.3rem;
   padding: 0;
   box-shadow: 0 0 8px 2px rgba(255,255,255,0.8);
@@ -195,4 +197,9 @@ a:hover {
 .pane.radiation:hover .label {
   color: #000;
   text-shadow: 0,0,1px, #fcf;
+}
+/* Once its become a star, slow it way down. */
+.pane.radiation.star {
+  -webkit-transition: all 0.66s, left 53s, top 53s;
+          transition: all 0.66s, left 53s, top 53s;
 }
