@@ -76,7 +76,7 @@ a:hover {
 .pane.center {
   box-shadow: 0,1,10,rgba(0,0,0,0.5);
   max-width: 80rem;
-  opacity: 0.9;
+  opacity: 0.9 !important;
   z-index: 100;
 }
 .pane.center:hover { z-index: 1000; }
@@ -160,7 +160,7 @@ a:hover {
 .pane .label {
   width: 200%;
   height: 100%;
-  padding-top: 20%;
+  padding-top: 25%;
   text-transform: uppercase;
   text-align: center;
   // color: #000;
@@ -202,4 +202,14 @@ a:hover {
 .pane.radiation.star {
   -webkit-transition: all 0.66s, left 53s, top 53s;
           transition: all 0.66s, left 53s, top 53s;
+}
+
+.edges {
+  position: fixed; left: 0; top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  stroke: rgb(255,255,255,0.3);
+  stroke-width: 1;
+  z-index: -10;
 }
