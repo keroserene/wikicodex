@@ -1,5 +1,8 @@
 html {
   font-size: 62.5%;
+  // font-size: 0.7vw;
+  font-size: 0.7vh;
+  padding: 0;
 }
 body {
   // background-color: #000;
@@ -7,9 +10,10 @@ body {
   color: #fff;
   font-size: 1.8rem;
   font-family: sans-serif;
-  // background-image: url('bg-earth-night.jpg');
-  background-image: url('galaxy.jpg');
+  background-image: url('img/galaxy2.jpg');
   background-size: cover;
+  background-position: center;
+  padding: 0; margin: 0;
 }
 
 a {
@@ -27,27 +31,89 @@ a:hover {
   text-align: center;
   padding-top: 30%;
   pointer-events: none;
-  -webkit-transition: all 3.66s;
-          transition: all 3.66s;
   font-size: 1.9rem;
   font-family: sans-serif;
   font-variant: small-caps;
   text-shadow: 1px 4px 6px #000;
   opacity: 0;
+  -webkit-transition: all 3.66s;
+          transition: all 3.66s;
 }
 .intro-text.active {
   opacity: 1;
 }
 .main-header {
+  position: relative;
   background-color: #000;
-  border-bottom: 1px solid #888;
+  border-bottom: 1px solid #333;
   display: block;
   width: 100%;
   font-family: monospace;
   text-align: center;
-  padding: 3rem;
+  padding: 1rem 0;
 }
 
+img { margin: 0; padding: 0; }
+
+.menubuttons {
+  position: absolute;
+  text-decoration: none;
+  display: inline-flex;
+  right: 0;
+  top: 0;
+  padding: 0;
+  height: 100%;
+  color: #888;
+  line-height: 7rem;
+  font-family: sans-serif;
+  font-weight: bold;
+}
+.menubuttons a {
+  height: 100%;
+  display: inline-block;
+  margin: 0;
+} .menubuttons a:hover, .menubuttons a:focus {
+  background-color: #fff;
+  color: #000;
+  outline: none;
+}
+
+.gh {
+  margin: 3px;
+}
+.helptoggle {
+  text-decoration: none;
+  padding: 0; margin: 0;
+  // border: 1px solid #333;
+  height: 100%;
+  width: 6rem;
+  color: #888;
+  font-size: 3rem;
+}
+
+.helptoggle:hover, .helptoggle:focus {
+  background-color: #fff;
+  color: #000;
+}
+.helptext {
+  background-color: rgba(0,0,0,0.9);
+  color: #ccc;
+  position: fixed;
+  right: -200%;
+  width: 60rem;
+  max-width: 80vw;
+  height: 100%;
+  line-height: 150%;
+  border-left: 1px solid #555;
+  padding: 0 6rem;
+  z-index: 2000;
+  text-overflow: scroll;
+  -webkit-transition: all 0.66s;
+          transition: all 0.66s;
+}
+.helptext.active {
+  right: 0;
+}
 /* CSS class chema for this.
   pane is the base "panel" which is the root of all nodes.
 
@@ -58,25 +124,18 @@ a:hover {
   - radiation means it's a node that's known, but not actively related to the
     current context, and will be in the background.
 */
-
 .pane {
   position: fixed;
   background-color: rgba(0,0,0,0.8);
   border: 1px solid #888;
   padding: 0;
-  // max-width: 60rem;
-  // min-width: 40rem;
-  // width: 40%;
-  // height: 40%;
-  max-width: 80rem;
-  // min-width: 20rem;
-  top: 50%;
-  left: 50%;
-  // max-height: 50%;
-  max-height: 80rem;
+
+  top: 50%; left: 50%;
+  // max-height: 50rem;
+
+  max-width: 96vw;
+
   margin: auto;
-  -webkit-transition: all 1.2s;
-          transition: all 1.2s;
   cursor: default;
   overflow: hidden;
   // text-overflow: ellipsis;
@@ -84,18 +143,19 @@ a:hover {
   color: #ccc;
   // border-radius: 30%;
   transform-origin: center;
-  -webkit-transform: translate(-50%, -50%);
   opacity: 0;
+
+  -webkit-transform: translate(-50%, -50%);
+  -webkit-transition: all 1.2s;
+          transition: all 1.2s;
 }
 /* The currently viewed wikipanel. */
 .pane.center {
   box-shadow: 0,1,10,rgba(0,0,0,0.5);
-  // max-width: 80rem;
   opacity: 0.9 !important;
   z-index: 100;
-  // overflow: visible;
-  // min-width: 80rem;
-  width: 80rem;
+  width: 40vh;
+  height: 50vh;
 }
 .pane.center:hover { z-index: 1000; }
 
@@ -106,6 +166,8 @@ a:hover {
   font-variant: small-caps;
   padding: 1rem 1rem;
   text-decoration: none;
+  -webkit-transition: opacity 0.5s;
+          transition: opacity 0.5s;
 }
 .pane-link:hover {
   background-color: rgba(255,255,255,0.5);
@@ -129,13 +191,14 @@ a:hover {
 }
 .pane-main-image-buffer {
   /* Only necessary when pane-main-image is there. */
-  height: 40rem;
+  height: 18vh;
   display: block;
 }
 
 .pane-content {
   background-color: rgba(0,0,0,0.77);
-  min-height: 37rem;
+  // min-height: 37rem;
+  height: 50vh;
   padding: 3rem 5rem 0;
 }
 .pane-header {
@@ -149,7 +212,8 @@ a:hover {
   font-size: 100%;
   line-height: 1.6;
   overflow: scroll;
-  max-height: 30rem;
+  // max-height: 30rem;
+  max-height: 25vh;
 }
 .thumbnail {
   display: inline-block;
@@ -283,9 +347,8 @@ a:hover {
   display: block;
   padding: 3rem;
   height: 5rem; width: 5rem;
-  position: absolute;
-  left: 50%;
-  top: 60%;
+  position: fixed;
+  left: 50%; top: 75vh;
   font-size: 5rem; text-align: center;
   line-height: 5rem;
   color: #888;
@@ -295,7 +358,7 @@ a:hover {
   text-decoration: none;
   -webkit-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 5 #000;
+  box-shadow: 0 0 12px 2px rgba(255,0,255,0.3);
   opacity: 0.6;
   z-index: 400;
 }
@@ -304,7 +367,7 @@ a:hover {
   -webkit-transition: opacity 3s;
           transition: opacity 3s;
 }
-.level1:hover {
+.level1:hover, .level1:focus {
   color: #fff;
   box-shadow: 0 0 23px 23px rgba(255,255,255,0.8);
   opacity: 0.9;
@@ -338,8 +401,8 @@ a:hover {
 
   .level1 {
     position: fixed;
-    left: 50%; top: 10%;
-    width: 20%; height: 20%;
+    left: 50%;
   }
+  .helptext { padding: 1rem; }
 
 }

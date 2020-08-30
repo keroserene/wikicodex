@@ -1,0 +1,100 @@
+<html>
+
+<head>
+  <title>Wikipedia Codex</title>
+  <link rel='stylesheet' href='codex.css'/>
+  <meta name="viewport" content="width=device-width, initial-scale=0.5">
+</head>
+
+<body>
+
+<div class='main-header'>
+  <b>
+  WikipediaCodex
+  v0.0.2 (&#9935;prototype)
+  </b><br/>
+  Pure client-side knowledge graph visualizer.
+
+  <div class='menubuttons'>
+  <a class='gh' href='https://github.com/keroserene/wikicodex' target='_blank'>
+    <img src='img/github64.png' style='width: 60%; margin-top: 1rem;'/>
+  </a>
+
+  <a class='helptoggle' href='#' onclick='toggleHelp()'>?</a>
+  </div>
+</div>
+
+<div class='helptext'>
+  <h2>Help & Info</h2>
+  <p>
+  This is a knowledge-graph traversal interface which operates on the current, live Wikipedia.
+  </p>
+  <b>Click or tap on a node to examine it.</b>
+
+  <hr/>
+  <p>
+  <h4>Keyboard Shortcuts</h4>
+
+  <code>
+  SPACE / N - Enumerate Adjacent Nodes.<br/>
+  ESC       - Minimize Current Node.<br/>
+  ENTER / O - Open Full Wikipedia page.<br/>
+  ? / H     - Toggle this help pane.
+  </code>
+  </p>
+
+  <hr/>
+  <h4>Interactions / Graph Traversal</h4>
+  <p>
+  Examining a node
+  open a summary with the current text excerpt (plus primary image, if
+  available.)
+  Then, if you click on the main button below "Enumerate Adjacent Nodes",
+  the codex will load all relevant adjacent nodes for
+  that Wikipedia article.
+  This reveals links and backlinks as additional nodes and edges on the graph,
+  which you may also explore.
+  </p><p>
+  If the node has not been interacted with for a while, it gradually fades into
+  the background, and out of existence (as far as this interface is concerned)
+  to conserve memory and preserve performance.
+  However, any node is easily retrieved, as long as Wikipedia is up.
+  </p>
+
+  <hr/>
+  <h4>Misc. Notes</h4>
+  <p>
+  This is a very simple light-weight client which does nothing but interact with the
+  Wikipedia API and render some nodes and edges with basic js and css shenanigans,
+  so there is no preserved state. (As of now.)
+  </p>
+  <p>
+  You may need to zoom out a bit for better scaling of the interface, depending
+  on your device.
+  </p><p>
+  Works better on larger screens, though still workable on mobile.
+  More features may be included soon to refine the navigation and interactions.
+  </p>
+
+  <hr/>
+  <p>
+  This experiment was thrown together in a day by
+  <a href='//serene.cx' target='_blank'>S E R E N E (serene.cx)</a>.
+  She hopes this tool might enhance your wikipedia tab-explosion explorations.
+  <br/><br/>Have fun. &#x2665;
+  </p>
+</div>
+
+<div class='main'>
+  <div class='intro-text'>Select Seed Node</div>
+  <a class="level1 hidden" href="#" onclick="generateNeighbors()">&#9096;</a>
+</div>
+
+<svg class="edges" id="edges" version="1.1"></svg>
+
+</body>
+
+<script src='lib/jquery.js'></script>
+<script src='codex.js'></script>
+
+</html>
